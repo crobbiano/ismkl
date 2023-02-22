@@ -11,7 +11,7 @@ class KernelMatrix:
         self.X = X
         self.Y = Y
         # kernels needs to look like a dict:
-        #   {'<kernel_name>': {'params': { <params>: <values>}}
+        #   {'<kernel_name>': {'param1': <value>, 'param2': <value>, etc}
         self.kernels = kernels
         # can prepopulate the matrix
         self._matrix = matrix
@@ -25,7 +25,7 @@ class KernelMatrix:
         return self._matrix
 
     def _generate_kernel_matrices(self):
-        dist_mat = sd.cdist(self.X.T, self.Y.T) #Scipy usage
+        dist_mat = sd.cdist(self.X.T, self.Y.T)
         matrices = []
         for k, v in self.kernels.items():
             match k:
@@ -59,5 +59,5 @@ if __name__ == '__main__':
                'quartic': {'param1': 1},
                }
     km = KernelMatrix(X, Y, kernels)
-    print((km.matrix.shape))
+    print(km.matrix.shape)
     print(km.matrix)
