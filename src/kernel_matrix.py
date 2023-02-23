@@ -33,7 +33,7 @@ class KernelMatrix:
                     tmp = np.square((1-np.square(dist_mat)/(2*v['param1']**2)))
                     tmp[np.square(dist_mat) >= 2*v['param1']**2] = 0
                 case 'gaussian':
-                    tmp = np.exp(-np.square(dist_mat)/2*v['param1']**2)
+                    tmp = np.exp(-np.square(dist_mat)/(2*v['param1']**2))
                 case 'polynomial':
                     tmp = (np.dot(self.X.T, self.Y) + v['param1'])**v['param2']
                 case 'linear':

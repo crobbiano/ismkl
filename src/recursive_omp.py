@@ -12,26 +12,23 @@ class RecursiveOMP:
         self.y = y
         self.residual_norm = residual_norm
         self.coeff_tolerance = coeff_tolerance
-        self.max_iterations = np.min([max_iterations, len(self.x)])
+        self.max_iterations = max_iterations
 
-        self._init_x_coefficients()
-
-    def _init_x_coefficients(self):
+    def run(self):
         if len(self.x) == 0:
             self.x = np.zeros((self.d.shape[1], self.y.shape[1]))
         elif self.x.shape[0] < self.d.shape[1]:
             self.x = np.concatenate([self.x, np.zeros((self.d.shape[1] - self.x.shape[0], self.x.shape[1]))], axis=0)
 
-    def run(self):
         for i in range(self.y.shape[1]):
-            y_l = self.y[:, i]
+            y_l = np.expand_dims(self.y[:, i], axis=-1)
             # y_l = self.y[ i, :]
             residual_norm_l = self.residual_norm * np.linalg.norm(y_l)
             # indices = np.squeeze(np.argwhere(self.x[i, :] == 0))
-            indices = np.squeeze(np.argwhere(self.x[:, i] == 0))
+            indices = np.squeeze(np.argwhere(self.x[:, i] != 0))
             # indices = np.argwhere(self.x[:, i] == 0)
 
-            if len(indices) != 0:
+            if len(indices) == 0:
                 # init vars
                 r = y_l
                 dt = np.expand_dims(np.asarray([]), axis=-1)
@@ -73,7 +70,7 @@ class RecursiveOMP:
                 b = np.dot(q, d_l)
                 d_tilde = d_l - np.dot(dt, b)
                 q_l = d_tilde/np.linalg.norm(d_tilde)**2
-                alpha = np.expand_dims(np.dot(q_l.T, y_l), axis=-1)
+                alpha = np.dot(q_l.T, y_l)
                 dt = np.concatenate([dt, d_l], axis=1)
                 q = np.concatenate([q - np.dot(b, q_l.T), q_l.T], axis=0)
 
@@ -90,7 +87,7 @@ class RecursiveOMP:
                 xbest = x_l
 
             # fill in the coefficients
-            self.x[indices_best, i] = xbest
+            self.x[indices_best, i] = xbest.flatten()
 
         self.x[np.abs(self.x) < self.coeff_tolerance] = 0
 
