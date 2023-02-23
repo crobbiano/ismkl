@@ -25,7 +25,6 @@ class RecursiveOMPTest(unittest.TestCase):
 
 
     def test_validate_omp_is_correct(self):
-        num_x, num_y, N = 50, 28, 1000
         features = np.asarray([[1, 2, 3, 4],
                                [2, 3, 4, 5],
                                [3, 4, 5, 6],
