@@ -1,5 +1,9 @@
+import logging
+
 import numpy as np
 import scipy.spatial.distance as sd
+from schema import Schema, And, Or
+
 
 class KernelMatrix:
     '''
@@ -7,6 +11,7 @@ class KernelMatrix:
     It takes in a set of kernel names and parameters and produces an NxN*K (short and fat) matrix that is all the kernel
     matrices concatenated together. There may be a better data structure for this.
     '''
+
     def __init__(self, X: np.array, Y: np.array, kernels: dict, matrix: np.array = None):
         self.X = X
         self.Y = Y
@@ -18,11 +23,19 @@ class KernelMatrix:
 
         self.supported_kernels = ['quartic', 'gaussian', 'polynomial', 'linear', 'tanh']
 
+        self._validate_kernels()
+        # raise NotImplementedError(f'Kernel type {k} does not match any of the supported kernel types:'
+        #                   f' {self.supported_kernels}')
+
     @property
     def matrix(self):
         if self._matrix is None:
             self._matrix = self._generate_kernel_matrices()
         return self._matrix
+
+    def _validate_kernels(self):
+        kernels_schema = Schema({And(str, lambda k: k in self.supported_kernels): {And(str, lambda m: 'param' in m): Or(int, float)}})
+        kernels_schema.validate(self.kernels)
 
     def _generate_kernel_matrices(self):
         dist_mat = sd.cdist(self.X.T, self.Y.T)
@@ -30,19 +43,16 @@ class KernelMatrix:
         for k, v in self.kernels.items():
             match k:
                 case 'quartic':
-                    tmp = np.square((1-np.square(dist_mat)/(2*v['param1']**2)))
-                    tmp[np.square(dist_mat) >= 2*v['param1']**2] = 0
+                    tmp = np.square((1 - np.square(dist_mat) / (2 * v['param1'] ** 2)))
+                    tmp[np.square(dist_mat) >= 2 * v['param1'] ** 2] = 0
                 case 'gaussian':
-                    tmp = np.exp(-np.square(dist_mat)/(2*v['param1']**2))
+                    tmp = np.exp(-np.square(dist_mat) / (2 * v['param1'] ** 2))
                 case 'polynomial':
-                    tmp = (np.dot(self.X.T, self.Y) + v['param1'])**v['param2']
+                    tmp = (np.dot(self.X.T, self.Y) + v['param1']) ** v['param2']
                 case 'linear':
                     tmp = (np.dot(self.X.T, self.Y) + v['param1'])
                 case 'tanh':
                     tmp = np.tanh(v['param1'] + v['param2'] * np.dot(self.X.T, self.Y))
-                case _:
-                    raise NotImplementedError(f'Kernel type {k} does not match any of the supported kernel types:'
-                                              f' {self.supported_kernels}')
 
             matrices.append(tmp)
 
