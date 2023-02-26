@@ -1,4 +1,5 @@
 import numpy as np
+from tqdm import tqdm
 
 
 class RecursiveOMP:
@@ -20,7 +21,7 @@ class RecursiveOMP:
         elif self.x.shape[0] < self.d.shape[1]:
             self.x = np.concatenate([self.x, np.zeros((self.d.shape[1] - self.x.shape[0], self.x.shape[1]))], axis=0)
 
-        for i in range(self.y.shape[1]):
+        for i in tqdm(range(self.y.shape[1])):
             y_l = np.expand_dims(self.y[:, i], axis=-1)
             # y_l = self.y[ i, :]
             residual_norm_l = self.residual_norm * np.linalg.norm(y_l)
