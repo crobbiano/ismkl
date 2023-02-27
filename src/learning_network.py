@@ -182,7 +182,7 @@ class TrainedNetwork(LearningNetwork):
                 self.L0 = l0_small
                 self.labels = labels_small
                 num_added += np.count_nonzero(guessed_wrong)
-            return num_added
+        return num_added
 
     def train(self, val_features, val_labels, batch_size: int = 50):
         available = self.training_sample_order(val_features.shape[1])
