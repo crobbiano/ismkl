@@ -104,8 +104,8 @@ if __name__ == "__main__":
 
     # Time to compute sparse codes:
     t_0 = time.time()
-    # coeffs = omp_parallel(samps, Dict, tau, 1e-8)
-    coeffs = omp(samps, Dict, tau, 1e-8)
+    # coeffs = omp_parallel(samps, Dict, tau, 1e-12)
+    coeffs = omp(samps, Dict, tau, 1e-12)
     t_1 = time.time()
 
     # Verify that the reconstruction codes correspond to the columns we know we sampled
