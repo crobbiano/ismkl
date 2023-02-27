@@ -2,7 +2,6 @@ import numpy as np
 from src.kernel_matrix import KernelMatrix
 from src.recursive_omp import RecursiveOMP
 import pickle
-import logging
 from typing import List
 from schema import Schema
 
@@ -51,7 +50,7 @@ class LearningNetwork:
     def save(self, network_path: str = './network.p', network_type: str = 'network'):
         with open(network_path, 'wb') as fh:
             pickle.dump(self)
-        logging.warning(f'{network_type} saved to {network_path}.')
+        print(f'{network_type} saved to {network_path}.')
 
 
     def load_trained_network(self, network):
@@ -67,7 +66,7 @@ class LearningNetwork:
                     self.K00 = network.K00
                     self.W0 = network.W0
             except FileNotFoundError:
-                logging.error(f'Network path {network} not found.')
+                raise FileNotFoundError(f'Network path {network} not found.')
 
     def train(self):
         pass
@@ -100,7 +99,7 @@ class BaseNetwork(LearningNetwork):
                 self.K00 = network.K00
                 self.W0 = network.W0
         except FileNotFoundError:
-            logging.error(f'Network path {network_path} not found.')
+            raise FileNotFoundError(f'Network path {network_path} not found.')
 
     def save(self, network_path: str = './base_network.p'):
         super().save(network_path, 'base_network.p')
@@ -112,7 +111,7 @@ class BaseNetwork(LearningNetwork):
         self.W0 = RecursiveOMP(self.K00, [], self.L0, residual_norm=self.residual_norm).run()
 
         base_results = self.classifier(self.features, self.labels)
-        logging.warning(f'Base accuracy: {np.count_nonzero(base_results[1])/len(base_results[1])}')
+        print(f'Base accuracy: {np.count_nonzero(base_results[1])/len(base_results[1])}')
 
 
 class TrainedNetwork(LearningNetwork):
@@ -127,7 +126,7 @@ class TrainedNetwork(LearningNetwork):
                 self.K00 = network.K00
                 self.W0 = network.W0
         except FileNotFoundError:
-            logging.error(f'Network path {network_path} not found.')
+            raise FileNotFoundError(f'Network path {network_path} not found.')
 
     def save(self, network_path: str = './trained_network.p'):
         super().save(network_path, 'trained_network.p')
@@ -199,10 +198,10 @@ class TrainedNetwork(LearningNetwork):
             label_batch = val_labels[selected_samples]
             new_atoms = self.learn_batch(self.features, sample_batch, label_batch)
             atoms_added += new_atoms
-            logging.warning(f'Batch {batch//batch_size} -- Added {new_atoms} atoms')
+            print(f'Batch {batch//batch_size} -- Added {new_atoms} atoms')
 
             batch_results = self.classifier(sample_batch, label_batch)
-            logging.warning(f'Batch accuracy: {np.count_nonzero(batch_results[1])/len(batch_results[1])}')
+            print(f'Batch accuracy: {np.count_nonzero(batch_results[1])/len(batch_results[1])}')
 
-        logging.warning(f'Added {atoms_added} atoms total')
+        print(f'Added {atoms_added}/{val_features.shape[1]} atoms total')
 
