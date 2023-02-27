@@ -72,7 +72,7 @@ class LearningNetwork:
         pass
 
     def score_samples(self, sample_batch, features):
-        K = KernelMatrix(X=sample_batch, Y=features, kernels=self.kernels).matrix
+        K = KernelMatrix(x=sample_batch, y=features, kernels=self.kernels).matrix
         scores = np.dot(K, self.W0)
         return scores
 
