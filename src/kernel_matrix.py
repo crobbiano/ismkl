@@ -35,28 +35,31 @@ class KernelMatrix:
 
     def _validate_kernels(self):
         kernels_schema = Schema({And(str, lambda k: k in self.supported_kernels): {And(str, lambda m: 'param' in m): Or(int, float)}})
-        kernels_schema.validate(self.kernels)
+        for kern in self.kernels:
+            kernels_schema.validate(kern)
 
     def _generate_kernel_matrices(self):
         dist_mat = sd.cdist(self.X.T, self.Y.T)
         matrices = []
-        for k, v in self.kernels.items():
-            match k:
-                case 'quartic':
-                    tmp = np.square((1 - np.square(dist_mat) / (2 * v['param1'] ** 2)))
-                    tmp[np.square(dist_mat) >= 2 * v['param1'] ** 2] = 0
-                case 'gaussian':
-                    tmp = np.exp(-np.square(dist_mat) / (2 * v['param1'] ** 2))
-                case 'polynomial':
-                    tmp = (np.dot(self.X.T, self.Y) + v['param1']) ** v['param2']
-                case 'linear':
-                    tmp = (np.dot(self.X.T, self.Y) + v['param1'])
-                case 'tanh':
-                    tmp = np.tanh(v['param1'] + v['param2'] * np.dot(self.X.T, self.Y))
+        for kern in self.kernels:
+            for k, v in kern.items():
+                match k:
+                    case 'quartic':
+                        tmp = np.square((1 - np.square(dist_mat) / (2 * v['param1'] ** 2)))
+                        tmp[np.square(dist_mat) >= 2 * v['param1'] ** 2] = 0
+                    case 'gaussian':
+                        tmp = np.exp(-np.square(dist_mat) / (2 * v['param1'] ** 2))
+                    case 'polynomial':
+                        tmp = (np.dot(self.X.T, self.Y) + v['param1']) ** v['param2']
+                    case 'linear':
+                        tmp = (np.dot(self.X.T, self.Y) + v['param1'])
+                    case 'tanh':
+                        tmp = np.tanh(v['param1'] + v['param2'] * np.dot(self.X.T, self.Y))
 
-            matrices.append(tmp)
+                matrices.append(tmp)
 
-        return np.concatenate(matrices, axis=1)
+        # return np.concatenate(matrices, axis=1)
+        return np.dstack(matrices).reshape((tmp.shape[0],-1))
 
 
 if __name__ == '__main__':

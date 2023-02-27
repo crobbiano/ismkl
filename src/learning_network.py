@@ -75,11 +75,11 @@ class LearningNetwork:
         scores = np.dot(K, self.W0)
         return scores
 
-    def classifier(self, samples):
+    def classifier(self, samples, labels):
         scores = self.score_samples(samples, self.features)
         num_classes = self.L0.shape[1]
         labels_estimated = np.argmax(scores, axis=1)
-        labels_truth = self.labels
+        labels_truth = labels
         correct_class = labels_estimated == labels_truth
         return labels_estimated, correct_class
 
@@ -109,7 +109,7 @@ class BaseNetwork(LearningNetwork):
         self.K00 = KernelMatrix(self.features, self.features, self.kernels).matrix
         self.W0 = RecursiveOMP(self.K00, [], self.L0, residual_norm=self.residual_norm).run()
 
-        base_results = self.classifier(self.features)
+        base_results = self.classifier(self.features, self.labels)
         logging.warning(f'Base accuracy: {np.count_nonzero(base_results[1])/len(base_results[1])}')
 
 
@@ -143,7 +143,7 @@ class TrainedNetwork(LearningNetwork):
         labels_truth_vec = np.eye(num_classes)[label_batch]
         num_added = 0
 
-        if not np.all(labels_estimated == self.labels):
+        if not np.all(labels_estimated == label_batch):
             # FIXME? This should be looking at misclassified samples instead of confidence in scores
             scores.sort(axis=1)
             sorted_diff = scores[:, -1] - scores[:, -2]
@@ -184,7 +184,7 @@ class TrainedNetwork(LearningNetwork):
                 self.W0 = W
                 self.L0 = l0_small
                 self.labels = labels_small
-                num_added += len(guessed_wrong == True)
+                num_added += np.count_nonzero(guessed_wrong)
             return num_added
 
     def train(self, val_features, val_labels, batch_size: int = 50):
@@ -204,21 +204,46 @@ class TrainedNetwork(LearningNetwork):
             label_batch = val_labels[selected_samples]
             atoms_added += self.learn_batch(self.features, sample_batch, label_batch)
 
+            batch_results = self.classifier(sample_batch, label_batch)
+            logging.warning(f'Batch accuracy: {np.count_nonzero(batch_results[1])/len(batch_results[1])}')
+
 if __name__ == "__main__":
     from scripts.load_mat import load_mat_data
 
     train, test, gen = load_mat_data('../data/LICENSE.mat')
 
-    kernel_dict = {
-        'gaussian': {'param1': 1},
-        'quartic': {'param1': 1},
-    }
+    gauss_params = .5*np.linspace(.01, 3, 10)
+    # kernel_dicts = [
+    #     {'gaussian': {'param1': gauss_params[0]}},
+    #     {'gaussian': {'param1': gauss_params[1]}},
+    #     {'gaussian': {'param1': gauss_params[2]}},
+    #     {'gaussian': {'param1': gauss_params[3]}},
+    #     {'gaussian': {'param1': gauss_params[4]}},
+    #     {'gaussian': {'param1': gauss_params[5]}},
+    #     {'gaussian': {'param1': gauss_params[6]}},
+    #     {'gaussian': {'param1': gauss_params[7]}},
+    #     {'gaussian': {'param1': gauss_params[8]}},
+    #     {'gaussian': {'param1': gauss_params[9]}},
+    #     {'polynomial': {'param1': .5, 'param2': 1}},
+    #     {'polynomial': {'param1': .5, 'param2': 2}},
+    #     {'polynomial': {'param1': .5, 'param2': 3}},
+    #     {'polynomial': {'param1': .5, 'param2': 4}},
+    #     {'polynomial': {'param1': 1, 'param2': 1}},
+    #     {'polynomial': {'param1': 1, 'param2': 2}},
+    #     {'polynomial': {'param1': 1, 'param2': 3}},
+    #     {'polynomial': {'param1': 1, 'param2': 4}},
+    # ]
+    kernel_dicts = [
+        {'gaussian': {'param1': 1}},
+        {'polynomial': {'param1': .5, 'param2': 1}},
+    ]
     base = BaseNetwork(
         features=train['features'],
         labels=train['labels'],
-        kernels=kernel_dict)
+        kernels=kernel_dicts)
     base.train()
-    results = base.classifier(train['features'])
+    results = base.classifier(train['features'], train['labels'])
+
 
 
     trained_network = TrainedNetwork(
@@ -226,5 +251,5 @@ if __name__ == "__main__":
         labels=base.labels,
         kernels=base.kernels)
     trained_network.load_trained_network(base)
-    trained_network.train(test['features'], test['labels'])
+    trained_network.train(test['features'], test['labels'], batch_size=32)
     print(vars(base))
