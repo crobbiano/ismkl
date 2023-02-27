@@ -31,9 +31,11 @@ class LearningNetwork:
 
         self.min_sparsity = min_sparsity
 
-    @property
-    def training_sample_order(self):
-        pass
+    def training_sample_order(self, num_samples):
+        if self._training_sample_order is None:
+            self._training_sample_order = np.arange(num_samples)
+            np.random.shuffle(self._training_sample_order)
+        return self._training_sample_order
 
     def _validate_features(self):
         if self.features is None:
@@ -117,11 +119,6 @@ class TrainedNetwork(LearningNetwork):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-    def training_sample_order(self, num_samples):
-        np.random.shuffle(num_samples)
-        self._training_sample_order = num_samples
-        return self._training_sample_order
-
     def load(self, network_path):
         try:
             with open(network_path, 'rb') as fh:
@@ -162,7 +159,8 @@ class TrainedNetwork(LearningNetwork):
             L0 = np.concatenate([self.L0, labels_truth_vec], axis=0)
             labels = np.concatenate([self.labels, label_batch], axis=0)
 
-            W = RecursiveOMP(Kmat, self.W0, L0, self.residual_norm).run()
+            # FIXME why oh why copy()
+            W = RecursiveOMP(Kmat, self.W0.copy(), L0, self.residual_norm).run()
 
             num_coefficients_to_delete = np.max(np.sum(W != 0, axis=0) - np.sum(self.W0 != 0, axis=0))
             if num_coefficients_to_delete < self.min_sparsity:
@@ -175,7 +173,7 @@ class TrainedNetwork(LearningNetwork):
                 K10 = KernelMatrix(wrong_features, self.features, self.kernels).matrix
                 K01 = KernelMatrix(self.train_features, wrong_features, self.kernels).matrix
                 K11 = KernelMatrix(wrong_features, wrong_features, self.kernels).matrix
-                Kmat = np.concatenate(np.concatenate([self.K00, K01], axis=1), np.concatenate([K10, K11], axis=1),
+                Kmat = np.concatenate([np.concatenate([self.K00, K01], axis=1), np.concatenate([K10, K11], axis=1)],
                                       axis=0)
                 W = RecursiveOMP(Kmat, self.W0, l0_small, self.residual_norm).run()
                 self.features = np.concatenate([self.features, wrong_features], axis=1)
@@ -188,68 +186,23 @@ class TrainedNetwork(LearningNetwork):
             return num_added
 
     def train(self, val_features, val_labels, batch_size: int = 50):
-        available = np.arange(val_features.shape[1])
-        np.random.shuffle(available)
+        available = self.training_sample_order(val_features.shape[1])
         atoms_added = 0
 
         # FIXME
         batch_size = np.min([batch_size, val_features.shape[1]])
 
         for batch in range(0, val_features.shape[1], batch_size):
-            # random_samples = self.training_sample_order(available)[batch:batch+batch_size]
             selected_samples = available[batch:batch+batch_size]
-            # available = np.delete(available, selected_samples)
 
             sample_batch = val_features[:, selected_samples]
             label_batch = val_labels[selected_samples]
-            atoms_added += self.learn_batch(self.features, sample_batch, label_batch)
+            new_atoms = self.learn_batch(self.features, sample_batch, label_batch)
+            atoms_added += new_atoms
+            logging.warning(f'Batch {batch//batch_size} -- Added {new_atoms} atoms')
 
             batch_results = self.classifier(sample_batch, label_batch)
             logging.warning(f'Batch accuracy: {np.count_nonzero(batch_results[1])/len(batch_results[1])}')
 
-if __name__ == "__main__":
-    from scripts.load_mat import load_mat_data
+        logging.warning(f'Added {atoms_added} atoms total')
 
-    train, test, gen = load_mat_data('../data/LICENSE.mat')
-
-    gauss_params = .5*np.linspace(.01, 3, 10)
-    # kernel_dicts = [
-    #     {'gaussian': {'param1': gauss_params[0]}},
-    #     {'gaussian': {'param1': gauss_params[1]}},
-    #     {'gaussian': {'param1': gauss_params[2]}},
-    #     {'gaussian': {'param1': gauss_params[3]}},
-    #     {'gaussian': {'param1': gauss_params[4]}},
-    #     {'gaussian': {'param1': gauss_params[5]}},
-    #     {'gaussian': {'param1': gauss_params[6]}},
-    #     {'gaussian': {'param1': gauss_params[7]}},
-    #     {'gaussian': {'param1': gauss_params[8]}},
-    #     {'gaussian': {'param1': gauss_params[9]}},
-    #     {'polynomial': {'param1': .5, 'param2': 1}},
-    #     {'polynomial': {'param1': .5, 'param2': 2}},
-    #     {'polynomial': {'param1': .5, 'param2': 3}},
-    #     {'polynomial': {'param1': .5, 'param2': 4}},
-    #     {'polynomial': {'param1': 1, 'param2': 1}},
-    #     {'polynomial': {'param1': 1, 'param2': 2}},
-    #     {'polynomial': {'param1': 1, 'param2': 3}},
-    #     {'polynomial': {'param1': 1, 'param2': 4}},
-    # ]
-    kernel_dicts = [
-        {'gaussian': {'param1': 1}},
-        {'polynomial': {'param1': .5, 'param2': 1}},
-    ]
-    base = BaseNetwork(
-        features=train['features'],
-        labels=train['labels'],
-        kernels=kernel_dicts)
-    base.train()
-    results = base.classifier(train['features'], train['labels'])
-
-
-
-    trained_network = TrainedNetwork(
-        features=base.features,
-        labels=base.labels,
-        kernels=base.kernels)
-    trained_network.load_trained_network(base)
-    trained_network.train(test['features'], test['labels'], batch_size=32)
-    print(vars(base))
