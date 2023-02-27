@@ -7,12 +7,11 @@ import multiprocessing
 
 
 def omp_parallel(data: ndarray, dictionary: ndarray, tau: int, tolerance: float):
-    K = dictionary.shape[1]
     # Solving the sparse codes for each data element (this can be parallelized since dict doesn't change)
     pool_obj = multiprocessing.Pool()
     args = [(data[:, nn], dictionary, tau, tolerance) for nn in range(data.shape[1])]
     codes_list = pool_obj.starmap(get_single_sample_codes_omp, args)
-    X_sparse=np.concatenate(codes_list, axis=1)
+    X_sparse = np.concatenate(codes_list, axis=1)
     pool_obj.close()
 
     return X_sparse
@@ -88,18 +87,24 @@ def blockMatrixInv(Ai: ndarray, B: ndarray, C: ndarray, D: float):
 
 
 if __name__ == "__main__":
-    Dict = np.random.randn(20, 100)
+    feature_dim = 100
+    Dict = np.random.randn(feature_dim, 4*feature_dim)
+
     # Make our samples just be the first 4 samples then add some of the fifth sample to our 4th
+
     samps = deepcopy(Dict[:, :4])
     samps[:, 3] += Dict[:, 5]
-    # Try with 40,000 samples below to see benefit of parallel approach (parallel is only faster after number of
-    # samples gets very large due to overhead of setting up pool
-    #samps = np.random.randn(20, 40000)
+
+    # # Try with 40,000 samples below to see benefit of parallel approach (parallel is only faster after number of
+    # # samples gets very large due to overhead of setting up pool
+    # samps = np.random.randn(feature_dim, 400000)
+
+    # Set the maximum number of non-zeros allowed (sparsity factor)
     tau = 5
 
     t_0 = time.time()
-    #coeffs = omp_parallel(samps, Dict, tau, 1e-14)
-    coeffs = omp(samps, Dict, tau, 1e-14)
+    # coeffs = omp_parallel(samps, Dict, tau, 1e-8)
+    coeffs = omp(samps, Dict, tau, 1e-8)
     t_1 = time.time()
 
     # Verify that the reconstruction codes correspond to the columns we know we sampled
