@@ -51,7 +51,8 @@ def get_single_sample_codes_omp(sample: ndarray, dictionary: ndarray, tau: int, 
     X_sparse = np.zeros((K, 1))
 
     while (len(I) < tau) and (av_err > tolerance):
-        k = np.argmax(np.abs(np.matmul(D.transpose(), r)))
+        inner_products = np.abs(np.matmul(D.transpose(), r))
+        k = np.argmax(inner_products)
         dk = D[:, k].reshape(D.shape[0], 1)
         if ii == 1:
             I.append(k)
@@ -86,10 +87,17 @@ def blockMatrixInv(Ai: ndarray, B: ndarray, C: ndarray, D: float):
                         np.matmul(np.matmul(-Ai, B), DCABi)], [np.matmul(np.matmul(-DCABi, C), Ai), DCABi]])
 
 
-if __name__ == "__main__":
-    feature_dim = 20 #100
-    Dict = np.random.randn(feature_dim, 3*feature_dim)
+def normalize_columns(in_matrix: ndarray):
+    my_matrix = deepcopy(in_matrix)
+    for col in range(my_matrix.shape[1]):
+        my_matrix[:, col] = my_matrix[:, col]/np.linalg.norm(my_matrix[:, col])
+    return my_matrix
 
+
+if __name__ == "__main__":
+    feature_dim = 10
+    Dict = np.random.randn(feature_dim, 3*feature_dim)
+    Dict = normalize_columns(Dict)
     # Make our samples just be the first 4 samples then add some of the fifth sample to our 4th
 
     samps = deepcopy(Dict[:, :4])
@@ -97,14 +105,14 @@ if __name__ == "__main__":
 
     # # Try with 40,000 samples below to see benefit of parallel approach (parallel is only faster after number of
     # # samples gets very large due to overhead of setting up pool
-    # samps = np.random.randn(feature_dim, 400000)
+    # samps = np.random.randn(feature_dim, 40_000)
 
     # Set the maximum number of non-zeros allowed (sparsity factor)
     tau = 5
 
     # Time to compute sparse codes:
     t_0 = time.time()
-    # coeffs = omp_parallel(samps, Dict, tau, 1e-12)
+    #coeffs = omp_parallel(samps, Dict, tau, 1e-12)
     coeffs = omp(samps, Dict, tau, 1e-12)
     t_1 = time.time()
 
