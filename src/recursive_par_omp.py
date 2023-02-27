@@ -1,5 +1,4 @@
 import time
-
 import numpy as np
 from copy import deepcopy
 from numpy import ndarray
@@ -29,27 +28,28 @@ def omp(data: ndarray, dictionary: ndarray, tau: int, tolerance: float):
 
 
 def get_single_sample_codes_omp(sample: ndarray, dictionary: ndarray, tau: int, tolerance: float):
-    x = sample
-    r = deepcopy(sample)  # residual vector
-    D = dictionary  # Dictionary
-    K = dictionary.shape[1]
+    x = sample                  # single sample that we would like to find codes for in terms of dictionary
+    r = deepcopy(sample)        # residual vector
+    D = dictionary              # Dictionary
+    K = dictionary.shape[1]     # Number of atoms in dictionary
+
     # Note that the o (optimal) variables are used to avoid an uncommon
     # scenario (that does occur) where a lower sparsity solution may have
     # had lower error than the final solution (with tau non zeros) but
     # wasn't low enough to break out of the coefficient solver via the error
-    # tolerance. A litte more memory for significantly better solutions,
+    # tolerance. A little more memory for significantly better solutions,
     # thanks to CR for the tip (JJH)
-    γ = 0  # this will be the growing coefficient vector
-    γₒ = 0  # this will store whatever the minimum error solution was during computation of the coefficients
-    av_err = 100  # norm of the error vector.
+
+    γₒ = 0          # this will store whatever the minimum error solution was during computation of the coefficients
+    av_err = 100    # norm of the error vector.
     best_err = 100  # will store lowest error vector norm
-    ii = 1  # while loop index
-    DI = []  # This holds the atoms selected via OMP as its columns (it grows along 2nd dimension)
-    DIGI = []  # Inverse of DI's gram matrix
-    DIdag = []  # PseudoInverse of DI
-    I = []  # set of indices corresponding to atoms selected in reconstruction
-    Iₒ = []  # I think you get the deal with these guys now (best set of indices lul)
+    ii = 1      # while loop index
+    DI = []     # This holds the atoms selected via OMP as its columns (it grows along 2nd dimension)
+    DIGI = []   # Inverse of DI's gram matrix
+    I = []      # set of indices corresponding to atoms selected in reconstruction
+    Iₒ = []     # I think you get the deal with these guys now (best set of indices lul)
     X_sparse = np.zeros((K, 1))
+
     while (len(I) < tau) and (av_err > tolerance):
         k = np.argmax(np.abs(np.matmul(D.transpose(), r)))
         dk = D[:, k].reshape(D.shape[0], 1)
@@ -87,8 +87,8 @@ def blockMatrixInv(Ai: ndarray, B: ndarray, C: ndarray, D: float):
 
 
 if __name__ == "__main__":
-    feature_dim = 100
-    Dict = np.random.randn(feature_dim, 4*feature_dim)
+    feature_dim = 20 #100
+    Dict = np.random.randn(feature_dim, 3*feature_dim)
 
     # Make our samples just be the first 4 samples then add some of the fifth sample to our 4th
 
@@ -102,6 +102,7 @@ if __name__ == "__main__":
     # Set the maximum number of non-zeros allowed (sparsity factor)
     tau = 5
 
+    # Time to compute sparse codes:
     t_0 = time.time()
     # coeffs = omp_parallel(samps, Dict, tau, 1e-8)
     coeffs = omp(samps, Dict, tau, 1e-8)
@@ -110,5 +111,6 @@ if __name__ == "__main__":
     # Verify that the reconstruction codes correspond to the columns we know we sampled
     print(coeffs)
     print(coeffs.shape)
+    # Print frobenius norm of error matrix
     print(np.linalg.norm(samps - np.matmul(Dict, coeffs)))
     print(f'Method took {t_1-t_0} s')
