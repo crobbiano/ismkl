@@ -95,7 +95,7 @@ def normalize_columns(in_matrix: ndarray):
 
 
 if __name__ == "__main__":
-    feature_dim = 10
+    feature_dim = 20
     Dict = np.random.randn(feature_dim, 3*feature_dim)
     Dict = normalize_columns(Dict)
     # Make our samples just be the first 4 samples then add some of the fifth sample to our 4th
@@ -108,7 +108,7 @@ if __name__ == "__main__":
     # samps = np.random.randn(feature_dim, 40_000)
 
     # Set the maximum number of non-zeros allowed (sparsity factor)
-    tau = 5
+    tau = 2
 
     # Time to compute sparse codes:
     t_0 = time.time()
