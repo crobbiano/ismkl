@@ -4,7 +4,7 @@ from src.recursive_omp import RecursiveOMP
 import pickle
 from typing import List
 from schema import Schema
-
+from src.recursive_par_omp import omp
 
 
 class LearningNetwork:
