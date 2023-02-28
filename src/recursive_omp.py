@@ -25,9 +25,7 @@ class RecursiveOMP:
             y_l = np.expand_dims(self.y[:, i], axis=-1)
             # y_l = self.y[ i, :]
             residual_norm_l = self.residual_norm * np.linalg.norm(y_l)
-            # indices = np.squeeze(np.argwhere(self.x[i, :] == 0))
             indices = np.squeeze(np.argwhere(self.x[:, i] != 0))
-            # indices = np.argwhere(self.x[:, i] == 0)
 
             if len(indices) == 0:
                 # init vars
@@ -36,7 +34,6 @@ class RecursiveOMP:
                 # find best match
                 idx = np.expand_dims(np.argmax(np.abs(np.dot(r.T, self.d))), axis=-1)
                 dt = np.concatenate([dt, self.d[:, idx]], axis=0)
-                # dt = np.concatenate([dt, self.d[idx, :]], axis=1)
                 indices = np.concatenate([indices, idx], axis=0)
 
                 # Update the filter
@@ -96,16 +93,19 @@ class RecursiveOMP:
 
 if __name__ == "__main__":
     from src.kernel_matrix import KernelMatrix
-    num_x, num_y, N = 50, 28, 1000
-    features = np.random.random((N, num_x))
-    kernel_dict = [
+    num_samples = 100
+    num_classes = 10
+    np.random.seed(69)
+    features = np.random.random((1000, num_samples))
+    np.random.seed(69)
+    labels = np.random.randint(0, num_classes - 1, num_samples)
+    kernel_dicts = [
         {'gaussian': {'param1': 1}},
-        {'quartic': {'param1': 1}},
+        {'linear': {'param1': 1}},
+        {'polynomial': {'param1': 1, 'param2': 2}},
     ]
-    values = np.random.randint(0, 4, num_x)
-    n_values = np.max(values) + 1
-    L0 = np.eye(n_values)[values]
-    K00 = KernelMatrix(features, features, kernel_dict).matrix
+    L0 = np.eye(num_classes)[labels]
+    K00 = KernelMatrix(features, features, kernel_dicts).matrix
     # Act
     W0 = RecursiveOMP(K00, [], L0, residual_norm=0.1).run()
     # Assert
