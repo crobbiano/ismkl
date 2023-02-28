@@ -66,7 +66,6 @@ class RecursiveOMP:
                 idx = np.expand_dims(np.argmax(np.abs(np.dot(r.T, self.d))), axis=-1)
                 d_l = self.d[:, idx]
                 indices = np.concatenate([indices, idx], axis=0)
-
                 # update filters
                 b = np.dot(q, d_l)
                 d_tilde = d_l - np.dot(dt, b)
@@ -93,6 +92,7 @@ class RecursiveOMP:
         self.x[np.abs(self.x) < self.coeff_tolerance] = 0
 
         return self.x
+
 
 if __name__ == "__main__":
     from src.kernel_matrix import KernelMatrix

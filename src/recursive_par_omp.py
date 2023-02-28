@@ -91,15 +91,6 @@ def get_single_sample_codes_omp(sample: ndarray, dictionary: ndarray, tau: int, 
     return X_sparse
 
 
-# def blockMatrixInv(Ai: ndarray, B: ndarray, C: ndarray, D: float):
-#     C = C.transpose()
-#     AiB = np.matmul(Ai, B)
-#     CAi = np.matmul(C, Ai)
-#     DCABi = 1.0/(D - np.matmul(C, AiB))
-#     AiBDCABi = np.matmul(AiB, DCABi)
-#     return np.block([[Ai + np.matmul(AiBDCABi, CAi), -AiBDCABi], [np.matmul(-DCABi, CAi), DCABi]])
-
-
 def get_single_sample_codes_omp_chris(y_l, d, max_iterations,  residual_norm):
     residual_norm_l = residual_norm * np.linalg.norm(y_l)
     indices = []
@@ -141,7 +132,6 @@ def get_single_sample_codes_omp_chris(y_l, d, max_iterations,  residual_norm):
         idx = np.expand_dims(np.argmax(np.abs(np.dot(r.T, d))), axis=-1)
         d_l = d[:, idx]
         indices = np.concatenate([indices, idx], axis=0)
-
         # update filters
         b = np.dot(q, d_l)
         d_tilde = d_l - np.dot(dt, b)
@@ -174,6 +164,7 @@ def blockMatrixInv(Ai: ndarray, B: ndarray, C: ndarray, D: float):
     DCABi = 1.0/(D - np.matmul(C, AiB))
     return np.block([[Ai + np.matmul(np.matmul(AiB, DCABi), CAi), np.matmul(-AiB, DCABi)],
                      [np.matmul(-DCABi, CAi), DCABi]])
+
 
 def normalize_columns(in_matrix: ndarray):
     my_matrix = deepcopy(in_matrix)
