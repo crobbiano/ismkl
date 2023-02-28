@@ -98,10 +98,10 @@ if __name__ == "__main__":
     from src.kernel_matrix import KernelMatrix
     num_x, num_y, N = 50, 28, 1000
     features = np.random.random((N, num_x))
-    kernel_dict = {
-        'gaussian': {'param1': 1},
-        'quartic': {'param1': 1},
-    }
+    kernel_dict = [
+        {'gaussian': {'param1': 1}},
+        {'quartic': {'param1': 1}},
+    ]
     values = np.random.randint(0, 4, num_x)
     n_values = np.max(values) + 1
     L0 = np.eye(n_values)[values]
