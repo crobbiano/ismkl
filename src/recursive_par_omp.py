@@ -191,10 +191,10 @@ if __name__ == "__main__":
 
     # Time to compute sparse codes:
     t_0 = time.time()
-    coeffs = omp_parallel(samps, Dict, tau, 1e-12, coeff_tolerance=1e-4)
+    #coeffs = omp_parallel(samps, Dict, tau, 1e-12, coeff_tolerance=1e-4)
     #coeffs = omp_parallel_chris(samps, Dict, tau, 1e-12, coeff_tolerance=1e-4)
     #coeffs = omp(samps, Dict, tau, 1e-12, coeff_tolerance=1e-4)
-    #coeffs = RecursiveOMP(Dict, [], samps, 1e-12, coeff_tolerance=1e-4, max_iterations=tau).run_parallel()
+    coeffs = RecursiveOMP(Dict, [], samps, 1e-12, coeff_tolerance=1e-4, max_iterations=tau).run()
     t_1 = time.time()
 
     # Verify that the reconstruction codes correspond to the columns we know we sampled
