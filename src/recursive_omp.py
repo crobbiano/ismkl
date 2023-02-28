@@ -59,7 +59,7 @@ class RecursiveOMP:
             # add atoms to d until norm of residual falls below thresholds
             xbest = x_l
             indices_best = []
-            num_iteration = 0
+            num_iteration = 1
             rprev = r
             while (np.linalg.norm(r) > residual_norm_l) and (num_iteration < self.max_iterations):
                 num_iteration += 1
