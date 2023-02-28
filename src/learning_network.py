@@ -11,6 +11,7 @@ class LearningNetwork:
     def __init__(self,
                  features: np.array = None,
                  labels: np.array = None,
+                 num_classes: int = None,
                  kernels: dict = None,
                  residual_norm: float = 0.1,
                  training_sample_order: List[int] = None,
@@ -19,6 +20,7 @@ class LearningNetwork:
         self.features = features
         self.train_features = features
         self.labels = labels
+        self._num_classes = num_classes
         self.kernels = kernels
         self.residual_norm = residual_norm
         self._training_sample_order = training_sample_order
@@ -29,6 +31,12 @@ class LearningNetwork:
         self.W0 = None
 
         self.min_sparsity = min_sparsity
+
+    @property
+    def num_classes(self):
+        if self._num_classes is None:
+            self._num_classes = np.max(self.labels) + 1
+        return self._num_classes
 
     def training_sample_order(self, num_samples):
         if self._training_sample_order is None:
@@ -105,8 +113,7 @@ class BaseNetwork(LearningNetwork):
         super().save(network_path, 'base_network.p')
 
     def train(self):
-        n_values = np.max(self.labels) + 1
-        self.L0 = np.eye(n_values)[self.labels]
+        self.L0 = np.eye(self.num_classes)[self.labels]
         self.K00 = KernelMatrix(self.features, self.features, self.kernels).matrix
         self.W0 = RecursiveOMP(self.K00, [], self.L0, residual_norm=self.residual_norm).run()
 
@@ -144,6 +151,7 @@ class TrainedNetwork(LearningNetwork):
             scores.sort(axis=1)
             sorted_diff = scores[:, -1] - scores[:, -2]
             # This is weighing top labels against second labels
+            # guessed_wrong =  labels_estimated != label_batch
             guessed_wrong = sorted_diff <= 0.2
 
             wrong_features = sample_batch[:, guessed_wrong]
