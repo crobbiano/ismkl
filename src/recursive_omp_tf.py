@@ -12,7 +12,7 @@ class RecursiveOMP:
         pass
 
 
-    # @tf.function
+    @tf.function
     def run(self, d, x, y, residual_norm,  coeff_tolerance=1e-4, max_iterations: int = 10):
         if len(x) == 0:
             x = tf.convert_to_tensor(tf.zeros((d.shape[1], y.shape[1])))
@@ -70,9 +70,7 @@ class RecursiveOMP:
                 if len(idx.get_shape()) == 0:
                     idx = tf.expand_dims(idx, axis=-1)
 
-                print(idx)
                 indices = tf.concat([tf.cast(indices, tf.int32), tf.cast(idx, tf.int32)], axis=0)
-                print(indices)
 
                 # update filters
                 b = tf.tensordot(q, d_l, axes=1)
@@ -88,7 +86,6 @@ class RecursiveOMP:
                 if tf.norm(rprev) > tf.norm(r):
                     xbest = x_l
                     indices_best = tf.cast(indices, tf.int32)
-                    print(indices_best)
                 rprev = r
 
             if len(indices_best) == 0:
@@ -96,10 +93,17 @@ class RecursiveOMP:
                 xbest = x_l
 
             # fill in the coefficients
-            ib_un = tf.gather(indices_best, tf.range(len(indices_best)), axis=1)
-            mask_indices = [[ind, i] for ind in ib_un]
-            new_coefficients_tensor = tf.SparseTensor(mask_indices, values=tf.squeeze(tf.get_static_value(xbest), axis=1), dense_shape=x.shape)
-            mask = tf.sparse.add(tf.cast(tf.SparseTensor(mask_indices, values=tf.constant(-1, shape=(len(mask_indices),)), dense_shape=x.shape), tf.float32) , tf.cast(tf.ones_like(x), tf.float32))
+            # expanded_best = tf.concat([indices_best, np.zeros_like(indices_best)], axis=1)
+            tmp1 = tf.expand_dims(indices_best, axis=1)
+            tmp2 = tf.zeros_like(tmp1)
+            mask_indices = tf.cast(tf.concat([tmp1,
+                                              tmp2],
+                                             axis=-1), tf.int64)
+            new_coefficients_tensor = tf.SparseTensor(mask_indices, values=tf.squeeze(xbest), dense_shape=x.shape)
+            tmp3 = tf.SparseTensor(mask_indices, values=tf.squeeze(tf.zeros_like(xbest))-1, dense_shape=x.shape)
+            tmp4 = tf.ones_like(x)
+            mask = tf.sparse.add(tf.cast(tmp3, tf.float32),
+                                 tf.cast(tmp4, tf.float32))
             x = tf.sparse.add(x * mask, new_coefficients_tensor * (1 - mask))
 
         # x[tf.abs(x) < coeff_tolerance] = 0

@@ -158,8 +158,8 @@ class TrainedNetwork(LearningNetwork):
             L0 = np.concatenate([self.L0, labels_truth_vec], axis=0)
             labels = np.concatenate([self.labels, label_batch], axis=0)
 
-            # FIXME why oh why copy()
-            W = RecursiveOMP(Kmat, self.W0.copy(), L0, self.residual_norm).run()
+            W0 = self.W0
+            W = RecursiveOMP().run(Kmat, W0, L0, self.residual_norm)
 
             num_coefficients_to_delete = np.max(np.sum(W != 0, axis=0) - np.sum(self.W0 != 0, axis=0))
             if num_coefficients_to_delete < self.min_sparsity:
